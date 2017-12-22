@@ -8,6 +8,7 @@ package zxdaq;
 import java.awt.Color;
 import java.util.LinkedList;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import jna.NiDaqException;
@@ -25,9 +26,10 @@ public class PlotFrame extends javax.swing.JFrame {
     final private String dataNameA = "data_A";
     private LinkedList<Double> ydata_A = new LinkedList<>();
     private ScheduledExecutorService ses = new ScheduledThreadPoolExecutor(1);
-    final private ZxDaq zdaq=new ZxDaq();
+    private ScheduledFuture sf;
+    final private ZxDaq zdaq = new ZxDaq();
     private volatile int counter;
-    private boolean completelyNew=true;
+    private boolean completelyNew = true;
 
     /**
      * Creates new form PlotFrame
@@ -49,11 +51,14 @@ public class PlotFrame extends javax.swing.JFrame {
 
         pnlPlot = new XChartPanel<XYChart>(chart);
         pnlBtns = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        txtLen = new javax.swing.JTextField();
         btnStart = new javax.swing.JButton();
         btnStop = new javax.swing.JButton();
         btnClr = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("ZX DAQ 0.53");
 
         javax.swing.GroupLayout pnlPlotLayout = new javax.swing.GroupLayout(pnlPlot);
         pnlPlot.setLayout(pnlPlotLayout);
@@ -63,13 +68,19 @@ public class PlotFrame extends javax.swing.JFrame {
         );
         pnlPlotLayout.setVerticalGroup(
             pnlPlotLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 560, Short.MAX_VALUE)
+            .addGap(0, 268, Short.MAX_VALUE)
         );
 
         getContentPane().add(pnlPlot, java.awt.BorderLayout.CENTER);
 
-        pnlBtns.setPreferredSize(new java.awt.Dimension(800, 40));
-        pnlBtns.setLayout(new java.awt.GridLayout());
+        pnlBtns.setPreferredSize(new java.awt.Dimension(800, 32));
+        pnlBtns.setLayout(new java.awt.GridLayout(1, 0));
+
+        jLabel1.setText("Length(s)");
+        pnlBtns.add(jLabel1);
+
+        txtLen.setText("150");
+        pnlBtns.add(txtLen);
 
         btnStart.setText("Start");
         btnStart.addActionListener(new java.awt.event.ActionListener() {
@@ -80,6 +91,7 @@ public class PlotFrame extends javax.swing.JFrame {
         pnlBtns.add(btnStart);
 
         btnStop.setText("Stop");
+        btnStop.setEnabled(false);
         btnStop.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnStopActionPerformed(evt);
@@ -101,7 +113,9 @@ public class PlotFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnClrActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClrActionPerformed
-        ydata_A.clear();
+        if (!ydata_A.isEmpty()) {
+            ydata_A.clear();
+        }
         if (!chart.getSeriesMap().isEmpty()) {
             chart.removeSeries(dataNameA);
         }
@@ -110,14 +124,20 @@ public class PlotFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_btnClrActionPerformed
 
     private void btnStartActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStartActionPerformed
-
         try {
-            counter = 0;
-            ydata_A.clear();
-            zdaq.initTask(completelyNew);
-            completelyNew=false;
-            ses.scheduleAtFixedRate(new Update(), 500, 50, TimeUnit.MILLISECONDS);
-        } catch (NiDaqException e) {
+            int t = Integer.parseInt(txtLen.getText());
+            if (t > 0 && t < 86400) {
+                txtLen.setEditable(false);
+                btnStart.setEnabled(false);
+                btnClr.setEnabled(false);
+                btnStop.setEnabled(true);
+                counter = 0;
+                ydata_A.clear();
+                zdaq.initTask(completelyNew);
+                completelyNew = false;
+                sf = ses.scheduleAtFixedRate(new Update(), 500, 50, TimeUnit.MILLISECONDS);
+            }
+        } catch (NiDaqException | NumberFormatException e) {
             System.out.println(e.toString());
         }
 
@@ -125,10 +145,17 @@ public class PlotFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_btnStartActionPerformed
 
     private void btnStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStopActionPerformed
-        try{
-        ses.shutdownNow();
-        zdaq.stopTask();
-        }catch(NiDaqException e){
+        try {
+            if (null != sf) {
+                sf.cancel(true);
+            }
+            zdaq.stopTask();
+            txtLen.setEditable(true);
+            btnClr.setEnabled(true);
+            btnStop.setEnabled(false);
+            btnStart.setEnabled(true);
+
+        } catch (NiDaqException e) {
             System.out.println(e.toString());
         }
     }//GEN-LAST:event_btnStopActionPerformed
@@ -138,8 +165,10 @@ public class PlotFrame extends javax.swing.JFrame {
         @Override
         public void run() {
             try {
-                if (counter > 500) {
-                    ses.shutdownNow();
+                if (counter > (double) Integer.parseInt(txtLen.getText()) / ZxDaq.timeSPANSec) {
+                    if (null != sf) {
+                        sf.cancel(true);
+                    }
                     zdaq.stopTask();
                 } else {
                     counter++;
@@ -205,7 +234,9 @@ public class PlotFrame extends javax.swing.JFrame {
     private javax.swing.JButton btnClr;
     private javax.swing.JButton btnStart;
     private javax.swing.JButton btnStop;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel pnlBtns;
     private javax.swing.JPanel pnlPlot;
+    private javax.swing.JTextField txtLen;
     // End of variables declaration//GEN-END:variables
 }

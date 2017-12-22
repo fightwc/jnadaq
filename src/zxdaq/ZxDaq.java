@@ -34,16 +34,12 @@ public class ZxDaq {
 
     public void initTask(boolean isNew) throws NiDaqException {
         if (isNew) {
-            System.out.println("try create");
             aiTask = daq.createTask("AITask");
+            daq.createAIVoltageChannel(aiTask, "/Dev1/ai3", "", DAQmx_Val_RSE, 0.0, 5.0, Nicaiu.DAQmx_Val_Volts, null);
+//            daq.createAIVoltageChannel(aiTask, "/Dev1/ai2", "", DAQmx_Val_RSE, 0.0, 5.0, Nicaiu.DAQmx_Val_Volts, null);
+            daq.cfgSampClkTiming(aiTask, "", ZxDaq.sampRate, Nicaiu.DAQmx_Val_Rising, Nicaiu.DAQmx_Val_ContSamps, 1000);
         }
-        System.out.println("created");
-        daq.createAIVoltageChannel(aiTask, "/Dev1/ai3", "", DAQmx_Val_RSE, 0.0, 5.0, Nicaiu.DAQmx_Val_Volts, null);
-        System.out.println("channel good");
-        daq.cfgSampClkTiming(aiTask, "", ZxDaq.sampRate, Nicaiu.DAQmx_Val_Rising, Nicaiu.DAQmx_Val_ContSamps, 1000);
-        System.out.println("timing good");
         daq.startTask(aiTask);
-
     }
 
     public double[] readAnalogueIn(int inputBufferSize) throws NiDaqException {
@@ -57,34 +53,10 @@ public class ZxDaq {
 
     public void stopTask() throws NiDaqException {
         daq.stopTask(aiTask);
-        daq.clearTask(aiTask);
+//        daq.clearTask(aiTask);
     }
 
     public static void main(String[] args) {
-//        try {
-//            ZxDaq zdaq = new ZxDaq();
-//            zdaq.initTask();
-//            for (int o = 0; o < 100; o++) {
-//                double[] data = zdaq.readAnalogueIn((int) (ZxDaq.sampRate * ZxDaq.timeSPANSec));
-//                if (data != null) {
-//                    for (int i = 0; i < data.length; i++) {
-////                        System.out.println("AI" + i + " = " + (data[i] < 0.01 ? "" : data[i]));
-//                        System.out.println(data[i]);
-//                    }
-//                } else {
-//                    System.out.println("Error");
-//                }
-//            }
-//            zdaq.stopTask();
-//        } catch (NiDaqException e) {
-////            try{
-////                        daq.stopTask(aiTask);
-////            daq.clearTask(aiTask);
-////            }catch (NiDaqException e){
-////                System.out.println(e.toString());
-////            }
-//            System.out.println(e.toString());
-//        }
         new PlotFrame().setVisible(true);
     }
 
