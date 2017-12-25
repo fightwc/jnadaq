@@ -6,15 +6,22 @@
 package zxdaq;
 
 import java.awt.Color;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.LinkedList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import javax.swing.JFileChooser;
 import jna.NiDaqException;
 import org.knowm.xchart.XChartPanel;
 import org.knowm.xchart.XYChart;
 import org.knowm.xchart.XYChartBuilder;
+import org.knowm.xchart.XYSeries;
+import org.knowm.xchart.style.markers.SeriesMarkers;
 
 /**
  *
@@ -24,7 +31,14 @@ public class PlotFrame extends javax.swing.JFrame {
 
     private XYChart chart = new XYChartBuilder().width(800).height(560).build();
     final private String dataNameA = "data_A";
+    final private String dataNameB = "data_B";
+    final private String dataNameC = "data_C";
     private LinkedList<Double> ydata_A = new LinkedList<>();
+    private LinkedList<Double> ydata_A_full = new LinkedList<>();
+    private LinkedList<Double> ydata_B = new LinkedList<>();
+    private LinkedList<Double> ydata_B_full = new LinkedList<>();
+    private LinkedList<Double> ydata_C = new LinkedList<>();
+    private LinkedList<Double> ydata_C_full = new LinkedList<>();
     private ScheduledExecutorService ses = new ScheduledThreadPoolExecutor(1);
     private ScheduledFuture sf;
     final private ZxDaq zdaq = new ZxDaq();
@@ -50,12 +64,19 @@ public class PlotFrame extends javax.swing.JFrame {
     private void initComponents() {
 
         pnlPlot = new XChartPanel<XYChart>(chart);
+        updownPanel = new javax.swing.JPanel();
         pnlBtns = new javax.swing.JPanel();
+        jPanel1 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         txtLen = new javax.swing.JTextField();
         btnStart = new javax.swing.JButton();
         btnStop = new javax.swing.JButton();
+        btnSave = new javax.swing.JButton();
         btnClr = new javax.swing.JButton();
+        jPanel3 = new javax.swing.JPanel();
+        txtDev1 = new javax.swing.JTextField();
+        txtDev2 = new javax.swing.JTextField();
+        txtDev3 = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("ZX DAQ 0.53");
@@ -64,23 +85,31 @@ public class PlotFrame extends javax.swing.JFrame {
         pnlPlot.setLayout(pnlPlotLayout);
         pnlPlotLayout.setHorizontalGroup(
             pnlPlotLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 800, Short.MAX_VALUE)
+            .addGap(0, 720, Short.MAX_VALUE)
         );
         pnlPlotLayout.setVerticalGroup(
             pnlPlotLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 268, Short.MAX_VALUE)
+            .addGap(0, 236, Short.MAX_VALUE)
         );
 
         getContentPane().add(pnlPlot, java.awt.BorderLayout.CENTER);
 
+        updownPanel.setLayout(new java.awt.GridLayout(2, 1));
+
         pnlBtns.setPreferredSize(new java.awt.Dimension(800, 32));
         pnlBtns.setLayout(new java.awt.GridLayout(1, 0));
 
-        jLabel1.setText("Length(s)");
-        pnlBtns.add(jLabel1);
+        jPanel1.setLayout(new java.awt.GridBagLayout());
 
-        txtLen.setText("150");
-        pnlBtns.add(txtLen);
+        jLabel1.setText("Length(s) ");
+        jPanel1.add(jLabel1, new java.awt.GridBagConstraints());
+
+        txtLen.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        txtLen.setText("600");
+        txtLen.setPreferredSize(new java.awt.Dimension(40, 21));
+        jPanel1.add(txtLen, new java.awt.GridBagConstraints());
+
+        pnlBtns.add(jPanel1);
 
         btnStart.setText("Start");
         btnStart.addActionListener(new java.awt.event.ActionListener() {
@@ -99,6 +128,14 @@ public class PlotFrame extends javax.swing.JFrame {
         });
         pnlBtns.add(btnStop);
 
+        btnSave.setText("Save");
+        btnSave.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSaveActionPerformed(evt);
+            }
+        });
+        pnlBtns.add(btnSave);
+
         btnClr.setText("Clear");
         btnClr.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -107,7 +144,27 @@ public class PlotFrame extends javax.swing.JFrame {
         });
         pnlBtns.add(btnClr);
 
-        getContentPane().add(pnlBtns, java.awt.BorderLayout.SOUTH);
+        updownPanel.add(pnlBtns);
+
+        jPanel3.setLayout(new java.awt.GridLayout(1, 0));
+
+        txtDev1.setText("/Dev2/ai0");
+        txtDev1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtDev1ActionPerformed(evt);
+            }
+        });
+        jPanel3.add(txtDev1);
+
+        txtDev2.setText("/Dev2/ai1");
+        jPanel3.add(txtDev2);
+
+        txtDev3.setText("/Dev2/ai2");
+        jPanel3.add(txtDev3);
+
+        updownPanel.add(jPanel3);
+
+        getContentPane().add(updownPanel, java.awt.BorderLayout.SOUTH);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -116,8 +173,16 @@ public class PlotFrame extends javax.swing.JFrame {
         if (!ydata_A.isEmpty()) {
             ydata_A.clear();
         }
+        if (!ydata_B.isEmpty()) {
+            ydata_C.clear();
+        }
+        if (!ydata_C.isEmpty()) {
+            ydata_C.clear();
+        }
         if (!chart.getSeriesMap().isEmpty()) {
             chart.removeSeries(dataNameA);
+            chart.removeSeries(dataNameB);
+            chart.removeSeries(dataNameC);
         }
         pnlPlot.repaint();
         pnlPlot.revalidate();
@@ -133,9 +198,11 @@ public class PlotFrame extends javax.swing.JFrame {
                 btnStop.setEnabled(true);
                 counter = 0;
                 ydata_A.clear();
-                zdaq.initTask(completelyNew);
+                ydata_B.clear();
+                ydata_C.clear();
+                zdaq.initTask(completelyNew, txtDev1.getText(), txtDev2.getText(), txtDev3.getText());
                 completelyNew = false;
-                sf = ses.scheduleAtFixedRate(new Update(), 500, 50, TimeUnit.MILLISECONDS);
+                sf = ses.scheduleAtFixedRate(new Update(), 500, 20, TimeUnit.MILLISECONDS);
             }
         } catch (NiDaqException | NumberFormatException e) {
             System.out.println(e.toString());
@@ -160,27 +227,92 @@ public class PlotFrame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_btnStopActionPerformed
 
+    private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
+        if (ydata_A_full.size() > 0 && ydata_B_full.size() > 0 && ydata_C_full.size() > 0) {
+            LinkedList<LinkedList<Double>> save = new LinkedList<>();
+            save.add(ydata_A_full);
+            save.add(ydata_B_full);
+            save.add(ydata_C_full);
+
+            JFileChooser fc = new JFileChooser();
+            fc.setDialogTitle("File to save");
+            if (fc.showSaveDialog(jPanel1) == JFileChooser.APPROVE_OPTION) {
+                File f = fc.getSelectedFile();
+                try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(f))) {
+                    out.writeObject(save);
+                } catch (IOException e) {
+                    System.out.println(e.toString());
+                }
+            }
+        }
+    }//GEN-LAST:event_btnSaveActionPerformed
+
+    private void txtDev1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtDev1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtDev1ActionPerformed
+
+    double[] splitSamples(double[] in, int start, int end) {
+        double[] rtn = new double[end - start];
+        System.arraycopy(in, start, rtn, 0, end - start);
+        return rtn;
+    }
+
     private class Update implements Runnable {
+
 
         @Override
         public void run() {
             try {
-                if (counter > (double) Integer.parseInt(txtLen.getText()) / ZxDaq.timeSPANSec) {
+                if (counter > (double) Integer.parseInt(txtLen.getText()) / ZxDaq.SAMP_INTERVAL) {
                     if (null != sf) {
                         sf.cancel(true);
                     }
                     zdaq.stopTask();
                 } else {
                     counter++;
-                    double[] data = zdaq.readAnalogueIn((int) (ZxDaq.sampRate * ZxDaq.timeSPANSec));
+                    double[] data = zdaq.readAnalogueIn((int) (ZxDaq.SAMPLE_RATE * ZxDaq.SAMP_INTERVAL));
                     if (data != null) {
-                        for (double d : data) {
+                        int perChannel = data.length / ZxDaq.CHANNEL_COUNT;
+                        double[] dataA = splitSamples(data, 0, perChannel);
+//                        System.out.println("A"+Arrays.toString(dataA));
+                        for (double d : dataA) {
                             ydata_A.add(d);
+                            ydata_A_full.add(d);
                         }
+                        while (ydata_A.size() > 500) {
+                            ydata_A.pop();
+                        }
+                        double[] dataB = splitSamples(data, perChannel, 2 * perChannel);
+//                        System.out.println("B"+Arrays.toString(dataB));
+                        for (double d : dataB) {
+                            ydata_B.add(d);
+                            ydata_B_full.add(d);
+                        }
+                        while (ydata_B.size() > 500) {
+                            ydata_B.pop();
+                        }
+                        double[] dataC = splitSamples(data, 2 * perChannel, 3 * perChannel);
+//                        System.out.println("C"+Arrays.toString(dataC));
+                        for (double d : dataC) {
+                            ydata_C.add(d);
+                            ydata_C_full.add(d);
+                        }
+                        while (ydata_C.size() > 500) {
+                            ydata_C.pop();
+                        }
+
+                        //TODO proper implement clear
                         if (chart.getSeriesMap().isEmpty()) {
-                            chart.addSeries(dataNameA, null, ydata_A, null);
+                            XYSeries a = chart.addSeries(dataNameA, null, ydata_A, null);
+                            XYSeries b = chart.addSeries(dataNameB, null, ydata_B, null);
+                            XYSeries c = chart.addSeries(dataNameC, null, ydata_C, null);
+                            a.setMarker(SeriesMarkers.NONE);
+                            b.setMarker(SeriesMarkers.NONE);
+                            c.setMarker(SeriesMarkers.NONE);
                         }
                         chart.updateXYSeries(dataNameA, null, ydata_A, null);
+                        chart.updateXYSeries(dataNameB, null, ydata_B, null);
+                        chart.updateXYSeries(dataNameC, null, ydata_C, null);
 //                        System.out.println(counter + "," + ydata_A.size());
                         pnlPlot.repaint();
                         pnlPlot.revalidate();
@@ -232,11 +364,18 @@ public class PlotFrame extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnClr;
+    private javax.swing.JButton btnSave;
     private javax.swing.JButton btnStart;
     private javax.swing.JButton btnStop;
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel pnlBtns;
     private javax.swing.JPanel pnlPlot;
+    private javax.swing.JTextField txtDev1;
+    private javax.swing.JTextField txtDev2;
+    private javax.swing.JTextField txtDev3;
     private javax.swing.JTextField txtLen;
+    private javax.swing.JPanel updownPanel;
     // End of variables declaration//GEN-END:variables
 }
