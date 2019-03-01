@@ -33,12 +33,12 @@ public class PlotFrame extends javax.swing.JFrame {
     final private String dataNameA = "data_A";
     final private String dataNameB = "data_B";
     final private String dataNameC = "data_C";
-    private LinkedList<Double> ydata_A = new LinkedList<>();
-    private LinkedList<Double> ydata_A_full = new LinkedList<>();
-    private LinkedList<Double> ydata_B = new LinkedList<>();
-    private LinkedList<Double> ydata_B_full = new LinkedList<>();
-    private LinkedList<Double> ydata_C = new LinkedList<>();
-    private LinkedList<Double> ydata_C_full = new LinkedList<>();
+    final private LinkedList<Double> ydata_A = new LinkedList<>();
+    final private LinkedList<Double> ydata_A_full = new LinkedList<>();
+    final private LinkedList<Double> ydata_B = new LinkedList<>();
+    final private LinkedList<Double> ydata_B_full = new LinkedList<>();
+    final private LinkedList<Double> ydata_C = new LinkedList<>();
+    final private LinkedList<Double> ydata_C_full = new LinkedList<>();
     private ScheduledExecutorService ses = new ScheduledThreadPoolExecutor(1);
     private ScheduledFuture sf;
     final private ZxDaq zdaq = new ZxDaq();
@@ -148,7 +148,7 @@ public class PlotFrame extends javax.swing.JFrame {
 
         jPanel3.setLayout(new java.awt.GridLayout(1, 0));
 
-        txtDev1.setText("/Dev2/ai0");
+        txtDev1.setText("/Dev1/ai0");
         txtDev1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 txtDev1ActionPerformed(evt);
@@ -156,10 +156,15 @@ public class PlotFrame extends javax.swing.JFrame {
         });
         jPanel3.add(txtDev1);
 
-        txtDev2.setText("/Dev2/ai1");
+        txtDev2.setText("/Dev1/ai1");
+        txtDev2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtDev2ActionPerformed(evt);
+            }
+        });
         jPanel3.add(txtDev2);
 
-        txtDev3.setText("/Dev2/ai2");
+        txtDev3.setText("/Dev1/ai2");
         jPanel3.add(txtDev3);
 
         updownPanel.add(jPanel3);
@@ -170,15 +175,13 @@ public class PlotFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnClrActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClrActionPerformed
-        if (!ydata_A.isEmpty()) {
-            ydata_A.clear();
-        }
-        if (!ydata_B.isEmpty()) {
-            ydata_C.clear();
-        }
-        if (!ydata_C.isEmpty()) {
-            ydata_C.clear();
-        }
+        ydata_A.clear();
+        ydata_A_full.clear();
+        ydata_B.clear();
+        ydata_B_full.clear();
+        ydata_C.clear();
+        ydata_C_full.clear();
+        
         if (!chart.getSeriesMap().isEmpty()) {
             chart.removeSeries(dataNameA);
             chart.removeSeries(dataNameB);
@@ -198,11 +201,14 @@ public class PlotFrame extends javax.swing.JFrame {
                 btnStop.setEnabled(true);
                 counter = 0;
                 ydata_A.clear();
+                ydata_A_full.clear();
                 ydata_B.clear();
+                ydata_B_full.clear();
                 ydata_C.clear();
+                ydata_C_full.clear();
                 zdaq.initTask(completelyNew, txtDev1.getText(), txtDev2.getText(), txtDev3.getText());
                 completelyNew = false;
-                sf = ses.scheduleAtFixedRate(new Update(), 500, 20, TimeUnit.MILLISECONDS);
+                sf = ses.scheduleWithFixedDelay(new Update(), 500, 150, TimeUnit.MILLISECONDS);
             }
         } catch (NiDaqException | NumberFormatException e) {
             System.out.println(e.toString());
@@ -251,6 +257,10 @@ public class PlotFrame extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_txtDev1ActionPerformed
 
+    private void txtDev2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtDev2ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtDev2ActionPerformed
+
     double[] splitSamples(double[] in, int start, int end) {
         double[] rtn = new double[end - start];
         System.arraycopy(in, start, rtn, 0, end - start);
@@ -258,7 +268,6 @@ public class PlotFrame extends javax.swing.JFrame {
     }
 
     private class Update implements Runnable {
-
 
         @Override
         public void run() {
@@ -279,17 +288,18 @@ public class PlotFrame extends javax.swing.JFrame {
                             ydata_A.add(d);
                             ydata_A_full.add(d);
                         }
-                        while (ydata_A.size() > 500) {
-                            ydata_A.pop();
+                        if(ydata_A.size()>400){
+                            ydata_A.subList(0, ydata_A.size()-400).clear();
                         }
+
                         double[] dataB = splitSamples(data, perChannel, 2 * perChannel);
 //                        System.out.println("B"+Arrays.toString(dataB));
                         for (double d : dataB) {
                             ydata_B.add(d);
                             ydata_B_full.add(d);
                         }
-                        while (ydata_B.size() > 500) {
-                            ydata_B.pop();
+                        if(ydata_B.size()>400){
+                            ydata_B.subList(0, ydata_B.size()-400).clear();
                         }
                         double[] dataC = splitSamples(data, 2 * perChannel, 3 * perChannel);
 //                        System.out.println("C"+Arrays.toString(dataC));
@@ -297,8 +307,8 @@ public class PlotFrame extends javax.swing.JFrame {
                             ydata_C.add(d);
                             ydata_C_full.add(d);
                         }
-                        while (ydata_C.size() > 500) {
-                            ydata_C.pop();
+                        if(ydata_C.size()>400){
+                            ydata_C.subList(0, ydata_C.size()-400).clear();
                         }
 
                         //TODO proper implement clear

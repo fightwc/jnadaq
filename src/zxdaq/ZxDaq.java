@@ -9,7 +9,6 @@ import java.nio.DoubleBuffer;
 import java.nio.IntBuffer;
 
 import com.sun.jna.Pointer;
-import java.util.Arrays;
 
 import jna.NiDaq;
 import jna.NiDaqException;
@@ -29,17 +28,19 @@ public class ZxDaq {
      */
     private NiDaq daq = new NiDaq();
     private Pointer aiTask = null;
-    public static final int DAQmx_Val_RSE = (int) 10083;
+    public static final int DAQmx_Val_RSE = 10083;
+//    public static final int DAQmx_Val_NRSE = 10078;
+//    public static final int DAQmx_Val_Diff = 10106;
     public static final double SAMP_INTERVAL = 0.2;
-    public static final double SAMPLE_RATE = 50.0;
+    public static final double SAMPLE_RATE = 100.0;
     public static final int CHANNEL_COUNT=3;
 
     public void initTask(boolean isNew, String dev1, String dev2, String dev3) throws NiDaqException {
         if (isNew) {
             aiTask = daq.createTask("AITask");
             daq.createAIVoltageChannel(aiTask, dev1, "", DAQmx_Val_RSE, 0.0, 10.0, Nicaiu.DAQmx_Val_Volts, null);
-            daq.createAIVoltageChannel(aiTask, dev2, "", DAQmx_Val_RSE, 0.0, 5.0, Nicaiu.DAQmx_Val_Volts, null);
-            daq.createAIVoltageChannel(aiTask, dev3, "", DAQmx_Val_RSE, 0.0, 5.0, Nicaiu.DAQmx_Val_Volts, null);
+            daq.createAIVoltageChannel(aiTask, dev2, "", DAQmx_Val_RSE, 0.0, 10.0, Nicaiu.DAQmx_Val_Volts, null);
+            daq.createAIVoltageChannel(aiTask, dev3, "", DAQmx_Val_RSE, 0.0, 10.0, Nicaiu.DAQmx_Val_Volts, null);
             daq.cfgSampClkTiming(aiTask, "", ZxDaq.SAMPLE_RATE, Nicaiu.DAQmx_Val_Rising, Nicaiu.DAQmx_Val_ContSamps, 1000);
         }
         daq.startTask(aiTask);

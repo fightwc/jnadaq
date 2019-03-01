@@ -145,7 +145,7 @@
           <SubComponents>
             <Component class="javax.swing.JTextField" name="txtDev1">
               <Properties>
-                <Property name="text" type="java.lang.String" value="/Dev2/ai0"/>
+                <Property name="text" type="java.lang.String" value="/Dev1/ai0"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="txtDev1ActionPerformed"/>
@@ -153,12 +153,15 @@
             </Component>
             <Component class="javax.swing.JTextField" name="txtDev2">
               <Properties>
-                <Property name="text" type="java.lang.String" value="/Dev2/ai1"/>
+                <Property name="text" type="java.lang.String" value="/Dev1/ai1"/>
               </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="txtDev2ActionPerformed"/>
+              </Events>
             </Component>
             <Component class="javax.swing.JTextField" name="txtDev3">
               <Properties>
-                <Property name="text" type="java.lang.String" value="/Dev2/ai2"/>
+                <Property name="text" type="java.lang.String" value="/Dev1/ai2"/>
               </Properties>
             </Component>
           </SubComponents>
