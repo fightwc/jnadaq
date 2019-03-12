@@ -10,12 +10,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.swing.JFileChooser;
+import javax.swing.JPanel;
 import jna.NiDaqException;
 import org.knowm.xchart.XChartPanel;
 import org.knowm.xchart.XYChart;
@@ -29,29 +31,43 @@ import org.knowm.xchart.style.markers.SeriesMarkers;
  */
 public class PlotFrame extends javax.swing.JFrame {
 
-    private XYChart chart = new XYChartBuilder().width(800).height(560).build();
-    final private String dataNameA = "data_A";
-    final private String dataNameB = "data_B";
-    final private String dataNameC = "data_C";
-    final private LinkedList<Double> ydata_A = new LinkedList<>();
-    final private LinkedList<Double> ydata_A_full = new LinkedList<>();
-    final private LinkedList<Double> ydata_B = new LinkedList<>();
-    final private LinkedList<Double> ydata_B_full = new LinkedList<>();
-    final private LinkedList<Double> ydata_C = new LinkedList<>();
-    final private LinkedList<Double> ydata_C_full = new LinkedList<>();
-    private ScheduledExecutorService ses = new ScheduledThreadPoolExecutor(1);
+    private final XYChart[] charts;
+    final private String[] dataTags;
+//    final private ArrayList<LinkedList<Double>> dataPartial;
+    final private ArrayList<LinkedList<Double>> dataFull;
+    private final JPanel[] pnls;
     private ScheduledFuture sf;
     final private ZxDaq zdaq = new ZxDaq();
     private volatile int counter;
     private boolean completelyNew = true;
+    private ScheduledExecutorService ses = new ScheduledThreadPoolExecutor(1);
+    final private int windowLen = (int) ZxDaq.SAMPLE_RATE * 2;
 
     /**
      * Creates new form PlotFrame
      */
     public PlotFrame() {
-        chart.getStyler().setPlotMargin(2)
-                .setChartBackgroundColor(Color.white).setLegendVisible(false);
+        this.charts = new XYChart[4];
+        for (int i = 0; i < 4; i++) {
+            charts[i] = new XYChartBuilder().width(448).height(320).build();
+            charts[i].getStyler().setPlotMargin(2)
+                    .setChartBackgroundColor(Color.white).setLegendVisible(false);
+        }
+//        dataPartial = new ArrayList<>();
+//        for (int i = 0; i < 16; i++) {
+//            dataPartial.add(new LinkedList<>());
+//        }
+        dataFull = new ArrayList<>();
+        for (int i = 0; i < 16; i++) {
+            dataFull.add(new LinkedList<>());
+        }
+        dataTags = new String[4];
+        for (int i = 0; i < 4; i++) {
+            dataTags[i] = (new StringBuilder("data")).append(Integer.toString(i)).toString();
+        }
+
         initComponents();
+        pnls = new JPanel[]{pnlLT, pnlRT, pnlLB, pnlRB};
     }
 
     /**
@@ -63,7 +79,6 @@ public class PlotFrame extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        pnlPlot = new XChartPanel<XYChart>(chart);
         updownPanel = new javax.swing.JPanel();
         pnlBtns = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
@@ -73,28 +88,40 @@ public class PlotFrame extends javax.swing.JFrame {
         btnStop = new javax.swing.JButton();
         btnSave = new javax.swing.JButton();
         btnClr = new javax.swing.JButton();
-        jPanel3 = new javax.swing.JPanel();
+        pnlQuad = new javax.swing.JPanel();
+        pnlLT = new javax.swing.JPanel();
+        pnlPlotLT = new XChartPanel<XYChart>(charts[0]);
+        pnl_LT_CHN = new javax.swing.JPanel();
+        txtDev0 = new javax.swing.JTextField();
         txtDev1 = new javax.swing.JTextField();
         txtDev2 = new javax.swing.JTextField();
         txtDev3 = new javax.swing.JTextField();
+        pnlRT = new javax.swing.JPanel();
+        pnlPlotRT = new XChartPanel<XYChart>(charts[1]);
+        pnl_RT_CHN = new javax.swing.JPanel();
+        txtDev4 = new javax.swing.JTextField();
+        txtDev5 = new javax.swing.JTextField();
+        txtDev6 = new javax.swing.JTextField();
+        txtDev7 = new javax.swing.JTextField();
+        pnlLB = new javax.swing.JPanel();
+        pnlPlotLB = new XChartPanel<XYChart>(charts[2]);
+        pnl_LB_CHN = new javax.swing.JPanel();
+        txtDev16 = new javax.swing.JTextField();
+        txtDev17 = new javax.swing.JTextField();
+        txtDev18 = new javax.swing.JTextField();
+        txtDev19 = new javax.swing.JTextField();
+        pnlRB = new javax.swing.JPanel();
+        pnlPlotRB = new XChartPanel<XYChart>(charts[3]);
+        pnl_RB_CHN = new javax.swing.JPanel();
+        txtDev20 = new javax.swing.JTextField();
+        txtDev21 = new javax.swing.JTextField();
+        txtDev22 = new javax.swing.JTextField();
+        txtDev23 = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("ZX DAQ 0.53");
+        setTitle("ZX DAQ 0.54");
 
-        javax.swing.GroupLayout pnlPlotLayout = new javax.swing.GroupLayout(pnlPlot);
-        pnlPlot.setLayout(pnlPlotLayout);
-        pnlPlotLayout.setHorizontalGroup(
-            pnlPlotLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 720, Short.MAX_VALUE)
-        );
-        pnlPlotLayout.setVerticalGroup(
-            pnlPlotLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 236, Short.MAX_VALUE)
-        );
-
-        getContentPane().add(pnlPlot, java.awt.BorderLayout.CENTER);
-
-        updownPanel.setLayout(new java.awt.GridLayout(2, 1));
+        updownPanel.setLayout(new java.awt.GridLayout(1, 1));
 
         pnlBtns.setPreferredSize(new java.awt.Dimension(800, 32));
         pnlBtns.setLayout(new java.awt.GridLayout(1, 0));
@@ -146,49 +173,206 @@ public class PlotFrame extends javax.swing.JFrame {
 
         updownPanel.add(pnlBtns);
 
-        jPanel3.setLayout(new java.awt.GridLayout(1, 0));
+        getContentPane().add(updownPanel, java.awt.BorderLayout.SOUTH);
 
-        txtDev1.setText("/Dev1/ai0");
+        pnlQuad.setLayout(new java.awt.GridLayout(2, 2));
+
+        pnlLT.setLayout(new java.awt.BorderLayout());
+
+        javax.swing.GroupLayout pnlPlotLTLayout = new javax.swing.GroupLayout(pnlPlotLT);
+        pnlPlotLT.setLayout(pnlPlotLTLayout);
+        pnlPlotLTLayout.setHorizontalGroup(
+            pnlPlotLTLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 360, Short.MAX_VALUE)
+        );
+        pnlPlotLTLayout.setVerticalGroup(
+            pnlPlotLTLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+
+        pnlLT.add(pnlPlotLT, java.awt.BorderLayout.CENTER);
+
+        pnl_LT_CHN.setLayout(new java.awt.GridLayout(1, 0));
+
+        txtDev0.setText("/Dev1/ai0");
+        txtDev0.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtDev0ActionPerformed(evt);
+            }
+        });
+        pnl_LT_CHN.add(txtDev0);
+
+        txtDev1.setText("/Dev1/ai1");
         txtDev1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 txtDev1ActionPerformed(evt);
             }
         });
-        jPanel3.add(txtDev1);
+        pnl_LT_CHN.add(txtDev1);
 
-        txtDev2.setText("/Dev1/ai1");
-        txtDev2.addActionListener(new java.awt.event.ActionListener() {
+        txtDev2.setText("/Dev1/ai2");
+        pnl_LT_CHN.add(txtDev2);
+
+        txtDev3.setText("/Dev1/ai3");
+        pnl_LT_CHN.add(txtDev3);
+
+        pnlLT.add(pnl_LT_CHN, java.awt.BorderLayout.SOUTH);
+
+        pnlQuad.add(pnlLT);
+
+        pnlRT.setLayout(new java.awt.BorderLayout());
+
+        javax.swing.GroupLayout pnlPlotRTLayout = new javax.swing.GroupLayout(pnlPlotRT);
+        pnlPlotRT.setLayout(pnlPlotRTLayout);
+        pnlPlotRTLayout.setHorizontalGroup(
+            pnlPlotRTLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 360, Short.MAX_VALUE)
+        );
+        pnlPlotRTLayout.setVerticalGroup(
+            pnlPlotRTLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 114, Short.MAX_VALUE)
+        );
+
+        pnlRT.add(pnlPlotRT, java.awt.BorderLayout.CENTER);
+
+        pnl_RT_CHN.setLayout(new java.awt.GridLayout(1, 0));
+
+        txtDev4.setText("/Dev1/ai4");
+        txtDev4.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtDev2ActionPerformed(evt);
+                txtDev4ActionPerformed(evt);
             }
         });
-        jPanel3.add(txtDev2);
+        pnl_RT_CHN.add(txtDev4);
 
-        txtDev3.setText("/Dev1/ai2");
-        jPanel3.add(txtDev3);
+        txtDev5.setText("/Dev1/ai5");
+        txtDev5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtDev5ActionPerformed(evt);
+            }
+        });
+        pnl_RT_CHN.add(txtDev5);
 
-        updownPanel.add(jPanel3);
+        txtDev6.setText("/Dev1/ai6");
+        pnl_RT_CHN.add(txtDev6);
 
-        getContentPane().add(updownPanel, java.awt.BorderLayout.SOUTH);
+        txtDev7.setText("/Dev1/ai7");
+        pnl_RT_CHN.add(txtDev7);
+
+        pnlRT.add(pnl_RT_CHN, java.awt.BorderLayout.SOUTH);
+
+        pnlQuad.add(pnlRT);
+
+        pnlLB.setLayout(new java.awt.BorderLayout());
+
+        javax.swing.GroupLayout pnlPlotLBLayout = new javax.swing.GroupLayout(pnlPlotLB);
+        pnlPlotLB.setLayout(pnlPlotLBLayout);
+        pnlPlotLBLayout.setHorizontalGroup(
+            pnlPlotLBLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 360, Short.MAX_VALUE)
+        );
+        pnlPlotLBLayout.setVerticalGroup(
+            pnlPlotLBLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+
+        pnlLB.add(pnlPlotLB, java.awt.BorderLayout.CENTER);
+
+        pnl_LB_CHN.setLayout(new java.awt.GridLayout(1, 0));
+
+        txtDev16.setText("/Dev1/ai16");
+        txtDev16.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtDev16ActionPerformed(evt);
+            }
+        });
+        pnl_LB_CHN.add(txtDev16);
+
+        txtDev17.setText("/Dev1/ai17");
+        txtDev17.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtDev17ActionPerformed(evt);
+            }
+        });
+        pnl_LB_CHN.add(txtDev17);
+
+        txtDev18.setText("/Dev1/ai18");
+        pnl_LB_CHN.add(txtDev18);
+
+        txtDev19.setText("/Dev1/ai19");
+        pnl_LB_CHN.add(txtDev19);
+
+        pnlLB.add(pnl_LB_CHN, java.awt.BorderLayout.SOUTH);
+
+        pnlQuad.add(pnlLB);
+
+        pnlRB.setLayout(new java.awt.BorderLayout());
+
+        javax.swing.GroupLayout pnlPlotRBLayout = new javax.swing.GroupLayout(pnlPlotRB);
+        pnlPlotRB.setLayout(pnlPlotRBLayout);
+        pnlPlotRBLayout.setHorizontalGroup(
+            pnlPlotRBLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 360, Short.MAX_VALUE)
+        );
+        pnlPlotRBLayout.setVerticalGroup(
+            pnlPlotRBLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+
+        pnlRB.add(pnlPlotRB, java.awt.BorderLayout.CENTER);
+
+        pnl_RB_CHN.setLayout(new java.awt.GridLayout(1, 0));
+
+        txtDev20.setText("/Dev1/ai20");
+        txtDev20.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtDev20ActionPerformed(evt);
+            }
+        });
+        pnl_RB_CHN.add(txtDev20);
+
+        txtDev21.setText("/Dev1/ai21");
+        txtDev21.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtDev21ActionPerformed(evt);
+            }
+        });
+        pnl_RB_CHN.add(txtDev21);
+
+        txtDev22.setText("/Dev1/ai22");
+        pnl_RB_CHN.add(txtDev22);
+
+        txtDev23.setText("/Dev1/ai23");
+        pnl_RB_CHN.add(txtDev23);
+
+        pnlRB.add(pnl_RB_CHN, java.awt.BorderLayout.SOUTH);
+
+        pnlQuad.add(pnlRB);
+
+        getContentPane().add(pnlQuad, java.awt.BorderLayout.CENTER);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnClrActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClrActionPerformed
-        ydata_A.clear();
-        ydata_A_full.clear();
-        ydata_B.clear();
-        ydata_B_full.clear();
-        ydata_C.clear();
-        ydata_C_full.clear();
-        
-        if (!chart.getSeriesMap().isEmpty()) {
-            chart.removeSeries(dataNameA);
-            chart.removeSeries(dataNameB);
-            chart.removeSeries(dataNameC);
+//        for (LinkedList<Double> l : dataPartial) {
+//            l.clear();
+//        }
+        for (LinkedList<Double> l : dataFull) {
+            l.clear();
         }
-        pnlPlot.repaint();
-        pnlPlot.revalidate();
+
+        for (XYChart c : charts) {
+            for (String s : dataTags) {
+                if (c.getSeriesMap().containsKey(s)) {
+                    c.removeSeries(s);
+                }
+            }
+        }
+        for (JPanel p : pnls) {
+            p.revalidate();
+            p.repaint();
+        }
     }//GEN-LAST:event_btnClrActionPerformed
 
     private void btnStartActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStartActionPerformed
@@ -200,15 +384,16 @@ public class PlotFrame extends javax.swing.JFrame {
                 btnClr.setEnabled(false);
                 btnStop.setEnabled(true);
                 counter = 0;
-                ydata_A.clear();
-                ydata_A_full.clear();
-                ydata_B.clear();
-                ydata_B_full.clear();
-                ydata_C.clear();
-                ydata_C_full.clear();
-                zdaq.initTask(completelyNew, txtDev1.getText(), txtDev2.getText(), txtDev3.getText());
+//                for (LinkedList<Double> l : dataPartial) {
+//                    l.clear();
+//                }
+                for (LinkedList<Double> l : dataFull) {
+                    l.clear();
+                }
+
+                zdaq.initTask(completelyNew, emurateDevs());
                 completelyNew = false;
-                sf = ses.scheduleWithFixedDelay(new Update(), 500, 150, TimeUnit.MILLISECONDS);
+                sf = ses.scheduleWithFixedDelay(new Update(), 100, 100, TimeUnit.MILLISECONDS);
             }
         } catch (NiDaqException | NumberFormatException e) {
             System.out.println(e.toString());
@@ -216,6 +401,27 @@ public class PlotFrame extends javax.swing.JFrame {
 
 
     }//GEN-LAST:event_btnStartActionPerformed
+
+    private String[] emurateDevs() {
+        return new String[]{
+            txtDev0.getText(),
+            txtDev1.getText(),
+            txtDev2.getText(),
+            txtDev3.getText(),
+            txtDev4.getText(),
+            txtDev5.getText(),
+            txtDev6.getText(),
+            txtDev7.getText(),
+            txtDev16.getText(),
+            txtDev17.getText(),
+            txtDev18.getText(),
+            txtDev19.getText(),
+            txtDev20.getText(),
+            txtDev21.getText(),
+            txtDev22.getText(),
+            txtDev23.getText()
+        };
+    }
 
     private void btnStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStopActionPerformed
         try {
@@ -234,32 +440,61 @@ public class PlotFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_btnStopActionPerformed
 
     private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
-        if (ydata_A_full.size() > 0 && ydata_B_full.size() > 0 && ydata_C_full.size() > 0) {
-            LinkedList<LinkedList<Double>> save = new LinkedList<>();
-            save.add(ydata_A_full);
-            save.add(ydata_B_full);
-            save.add(ydata_C_full);
-
-            JFileChooser fc = new JFileChooser();
-            fc.setDialogTitle("File to save");
-            if (fc.showSaveDialog(jPanel1) == JFileChooser.APPROVE_OPTION) {
-                File f = fc.getSelectedFile();
-                try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(f))) {
-                    out.writeObject(save);
-                } catch (IOException e) {
-                    System.out.println(e.toString());
-                }
+        for (LinkedList<Double> l : dataFull) {
+            if (null == l || l.isEmpty()) {
+                return;
             }
         }
+
+        LinkedList<LinkedList<Double>> save = new LinkedList<>();
+        for (LinkedList<Double> l : dataFull) {
+            save.add(l);
+        }
+
+        JFileChooser fc = new JFileChooser();
+        fc.setDialogTitle("File to save");
+        if (fc.showSaveDialog(jPanel1) == JFileChooser.APPROVE_OPTION) {
+            File f = fc.getSelectedFile();
+            try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(f))) {
+                out.writeObject(save);
+            } catch (IOException e) {
+                System.out.println(e.toString());
+            }
+        }
+
     }//GEN-LAST:event_btnSaveActionPerformed
+
+    private void txtDev0ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtDev0ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtDev0ActionPerformed
 
     private void txtDev1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtDev1ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txtDev1ActionPerformed
 
-    private void txtDev2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtDev2ActionPerformed
+    private void txtDev16ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtDev16ActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_txtDev2ActionPerformed
+    }//GEN-LAST:event_txtDev16ActionPerformed
+
+    private void txtDev17ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtDev17ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtDev17ActionPerformed
+
+    private void txtDev20ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtDev20ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtDev20ActionPerformed
+
+    private void txtDev21ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtDev21ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtDev21ActionPerformed
+
+    private void txtDev5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtDev5ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtDev5ActionPerformed
+
+    private void txtDev4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtDev4ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtDev4ActionPerformed
 
     double[] splitSamples(double[] in, int start, int end) {
         double[] rtn = new double[end - start];
@@ -280,55 +515,33 @@ public class PlotFrame extends javax.swing.JFrame {
                 } else {
                     counter++;
                     double[] data = zdaq.readAnalogueIn((int) (ZxDaq.SAMPLE_RATE * ZxDaq.SAMP_INTERVAL));
-                    if (data != null) {
-                        int perChannel = data.length / ZxDaq.CHANNEL_COUNT;
-                        double[] dataA = splitSamples(data, 0, perChannel);
-//                        System.out.println("A"+Arrays.toString(dataA));
-                        for (double d : dataA) {
-                            ydata_A.add(d);
-                            ydata_A_full.add(d);
+                    if (data == null || data.length == 0) {
+                        System.out.println("Null or empty data while reading Analog In");
+                        return;
+                    }
+                    int perChannel = data.length / ZxDaq.CHANNEL_COUNT;
+                    for (int i = 0; i < 16; i++) {
+                        double[] dataT = splitSamples(data, i, (i + 1) * perChannel);
+                        for (double d : dataT) {
+//                            dataPartial.get(i).add(d);
+                            dataFull.get(i).add(d);
                         }
-                        if(ydata_A.size()>400){
-                            ydata_A.subList(0, ydata_A.size()-400).clear();
+//                        if (dataPartial.get(i).size() > 5000) {
+//                            dataPartial.get(i).subList(0, dataPartial.get(i).size() - 200).clear();
+//                        }
+                    }
+                    for (int i = 0; i < 16; i++) {
+                        int pnlIdx = i >> 2;
+                        int seriesIdx = i & 3;
+                        XYChart c = charts[pnlIdx];
+                        String tag = dataTags[seriesIdx];
+                        LinkedList<Double> l = dataFull.get(i);
+                        if (!c.getSeriesMap().containsKey(tag)) {
+                            (c.addSeries(tag, null, l.subList(l.size() > (windowLen-1) ? l.size() - windowLen : 0, l.size()), null)).setMarker(SeriesMarkers.NONE);
                         }
-
-                        double[] dataB = splitSamples(data, perChannel, 2 * perChannel);
-//                        System.out.println("B"+Arrays.toString(dataB));
-                        for (double d : dataB) {
-                            ydata_B.add(d);
-                            ydata_B_full.add(d);
-                        }
-                        if(ydata_B.size()>400){
-                            ydata_B.subList(0, ydata_B.size()-400).clear();
-                        }
-                        double[] dataC = splitSamples(data, 2 * perChannel, 3 * perChannel);
-//                        System.out.println("C"+Arrays.toString(dataC));
-                        for (double d : dataC) {
-                            ydata_C.add(d);
-                            ydata_C_full.add(d);
-                        }
-                        if(ydata_C.size()>400){
-                            ydata_C.subList(0, ydata_C.size()-400).clear();
-                        }
-
-                        //TODO proper implement clear
-                        if (chart.getSeriesMap().isEmpty()) {
-                            XYSeries a = chart.addSeries(dataNameA, null, ydata_A, null);
-                            XYSeries b = chart.addSeries(dataNameB, null, ydata_B, null);
-                            XYSeries c = chart.addSeries(dataNameC, null, ydata_C, null);
-                            a.setMarker(SeriesMarkers.NONE);
-                            b.setMarker(SeriesMarkers.NONE);
-                            c.setMarker(SeriesMarkers.NONE);
-                        }
-                        chart.updateXYSeries(dataNameA, null, ydata_A, null);
-                        chart.updateXYSeries(dataNameB, null, ydata_B, null);
-                        chart.updateXYSeries(dataNameC, null, ydata_C, null);
-//                        System.out.println(counter + "," + ydata_A.size());
-                        pnlPlot.repaint();
-                        pnlPlot.revalidate();
-
-                    } else {
-                        System.out.println("Error");
+                        c.updateXYSeries(tag, null, l.subList(l.size() > (windowLen-1) ? l.size() - windowLen : 0, l.size()), null);
+                        pnls[pnlIdx].revalidate();
+                        pnls[pnlIdx].repaint();
                     }
                 }
             } catch (NiDaqException e) {
@@ -379,12 +592,36 @@ public class PlotFrame extends javax.swing.JFrame {
     private javax.swing.JButton btnStop;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel pnlBtns;
-    private javax.swing.JPanel pnlPlot;
+    private javax.swing.JPanel pnlLB;
+    private javax.swing.JPanel pnlLT;
+    private javax.swing.JPanel pnlPlotLB;
+    private javax.swing.JPanel pnlPlotLT;
+    private javax.swing.JPanel pnlPlotRB;
+    private javax.swing.JPanel pnlPlotRT;
+    private javax.swing.JPanel pnlQuad;
+    private javax.swing.JPanel pnlRB;
+    private javax.swing.JPanel pnlRT;
+    private javax.swing.JPanel pnl_LB_CHN;
+    private javax.swing.JPanel pnl_LT_CHN;
+    private javax.swing.JPanel pnl_RB_CHN;
+    private javax.swing.JPanel pnl_RT_CHN;
+    private javax.swing.JTextField txtDev0;
     private javax.swing.JTextField txtDev1;
+    private javax.swing.JTextField txtDev16;
+    private javax.swing.JTextField txtDev17;
+    private javax.swing.JTextField txtDev18;
+    private javax.swing.JTextField txtDev19;
     private javax.swing.JTextField txtDev2;
+    private javax.swing.JTextField txtDev20;
+    private javax.swing.JTextField txtDev21;
+    private javax.swing.JTextField txtDev22;
+    private javax.swing.JTextField txtDev23;
     private javax.swing.JTextField txtDev3;
+    private javax.swing.JTextField txtDev4;
+    private javax.swing.JTextField txtDev5;
+    private javax.swing.JTextField txtDev6;
+    private javax.swing.JTextField txtDev7;
     private javax.swing.JTextField txtLen;
     private javax.swing.JPanel updownPanel;
     // End of variables declaration//GEN-END:variables
