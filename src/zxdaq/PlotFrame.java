@@ -11,6 +11,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -119,7 +120,12 @@ public class PlotFrame extends javax.swing.JFrame {
         txtDev23 = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("ZX DAQ 0.54");
+        setTitle("ZX DAQ 19.0311");
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+        });
 
         updownPanel.setLayout(new java.awt.GridLayout(1, 1));
 
@@ -132,7 +138,7 @@ public class PlotFrame extends javax.swing.JFrame {
         jPanel1.add(jLabel1, new java.awt.GridBagConstraints());
 
         txtLen.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        txtLen.setText("600");
+        txtLen.setText("2400");
         txtLen.setPreferredSize(new java.awt.Dimension(40, 21));
         jPanel1.add(txtLen, new java.awt.GridBagConstraints());
 
@@ -393,7 +399,7 @@ public class PlotFrame extends javax.swing.JFrame {
 
                 zdaq.initTask(completelyNew, emurateDevs());
                 completelyNew = false;
-                sf = ses.scheduleWithFixedDelay(new Update(), 100, 100, TimeUnit.MILLISECONDS);
+                sf = ses.scheduleWithFixedDelay(new Update(), 100, 150, TimeUnit.MILLISECONDS);
             }
         } catch (NiDaqException | NumberFormatException e) {
             System.out.println(e.toString());
@@ -457,8 +463,10 @@ public class PlotFrame extends javax.swing.JFrame {
             File f = fc.getSelectedFile();
             try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(f))) {
                 out.writeObject(save);
+                out.flush();
             } catch (IOException e) {
                 System.out.println(e.toString());
+                this.setTitle(e.toString());
             }
         }
 
@@ -496,11 +504,14 @@ public class PlotFrame extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_txtDev4ActionPerformed
 
-    double[] splitSamples(double[] in, int start, int end) {
-        double[] rtn = new double[end - start];
-        System.arraycopy(in, start, rtn, 0, end - start);
-        return rtn;
-    }
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+        if (null != sf && !sf.isCancelled()) {
+            sf.cancel(true);
+        }
+        if (null != ses && ses.isShutdown()) {
+            ses.shutdown();
+        }
+    }//GEN-LAST:event_formWindowClosing
 
     private class Update implements Runnable {
 
@@ -515,20 +526,17 @@ public class PlotFrame extends javax.swing.JFrame {
                 } else {
                     counter++;
                     double[] data = zdaq.readAnalogueIn((int) (ZxDaq.SAMPLE_RATE * ZxDaq.SAMP_INTERVAL));
+                    //DEBUG
                     if (data == null || data.length == 0) {
                         System.out.println("Null or empty data while reading Analog In");
                         return;
                     }
                     int perChannel = data.length / ZxDaq.CHANNEL_COUNT;
-                    for (int i = 0; i < 16; i++) {
-                        double[] dataT = splitSamples(data, i, (i + 1) * perChannel);
-                        for (double d : dataT) {
-//                            dataPartial.get(i).add(d);
-                            dataFull.get(i).add(d);
+//                    System.out.println(perChannel);
+                    for (int i = 0; i < ZxDaq.CHANNEL_COUNT; i++) {
+                        for (int j = i * perChannel; j < (i + 1) * perChannel; j++) {
+                            dataFull.get(i).add(data[j]);
                         }
-//                        if (dataPartial.get(i).size() > 5000) {
-//                            dataPartial.get(i).subList(0, dataPartial.get(i).size() - 200).clear();
-//                        }
                     }
                     for (int i = 0; i < 16; i++) {
                         int pnlIdx = i >> 2;
@@ -537,9 +545,9 @@ public class PlotFrame extends javax.swing.JFrame {
                         String tag = dataTags[seriesIdx];
                         LinkedList<Double> l = dataFull.get(i);
                         if (!c.getSeriesMap().containsKey(tag)) {
-                            (c.addSeries(tag, null, l.subList(l.size() > (windowLen-1) ? l.size() - windowLen : 0, l.size()), null)).setMarker(SeriesMarkers.NONE);
+                            (c.addSeries(tag, null, l.subList(l.size() > (windowLen - 1) ? l.size() - windowLen : 0, l.size()), null)).setMarker(SeriesMarkers.NONE);
                         }
-                        c.updateXYSeries(tag, null, l.subList(l.size() > (windowLen-1) ? l.size() - windowLen : 0, l.size()), null);
+                        c.updateXYSeries(tag, null, l.subList(l.size() > (windowLen - 1) ? l.size() - windowLen : 0, l.size()), null);
                         pnls[pnlIdx].revalidate();
                         pnls[pnlIdx].repaint();
                     }
@@ -625,4 +633,11 @@ public class PlotFrame extends javax.swing.JFrame {
     private javax.swing.JTextField txtLen;
     private javax.swing.JPanel updownPanel;
     // End of variables declaration//GEN-END:variables
+
+    public static void debugOutput(Object o) {
+        if (true) {
+            System.out.println(o.toString());
+        }
+    }
+
 }

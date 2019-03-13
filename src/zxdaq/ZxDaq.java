@@ -9,6 +9,8 @@ import java.nio.DoubleBuffer;
 import java.nio.IntBuffer;
 
 import com.sun.jna.Pointer;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 import jna.NiDaq;
 import jna.NiDaqException;
@@ -32,17 +34,27 @@ public class ZxDaq {
 //    public static final int DAQmx_Val_NRSE = 10078;
 //    public static final int DAQmx_Val_Diff = 10106;
     public static final double SAMP_INTERVAL = 0.2;
-    public static final double SAMPLE_RATE = 250.0;
+    public static final double SAMPLE_RATE = 200;
     public static final int CHANNEL_COUNT = 16;
 
-    
-
-    
     public void initTask(boolean isNew, String[] devs) throws NiDaqException {
+        boolean[] successed = new boolean[devs.length];
         if (isNew) {
+//            PlotFrame.debugOutput("init");
+            daq.resetDevice("Dev1");
+//            PlotFrame.debugOutput("reset");
             aiTask = daq.createTask("AITask");
-            for (String s : devs) {
-                daq.createAIVoltageChannel(aiTask, s, "", DAQmx_Val_RSE, 0.0, 10.0, Nicaiu.DAQmx_Val_Volts, null);
+            for (int i = 0; i < devs.length; i++) {
+                PlotFrame.debugOutput(devs[i]);
+                while (!successed[i]) {
+                    try {
+                        Thread.sleep(100);
+                        daq.createAIVoltageChannel(aiTask, devs[i], "", DAQmx_Val_RSE, 0.0, 10.0, Nicaiu.DAQmx_Val_Volts, null);
+                        successed[i] = true;
+                    } catch (NiDaqException | InterruptedException e) {
+                        System.out.println(e.toString());
+                    }
+                }
             }
             daq.cfgSampClkTiming(aiTask, "", ZxDaq.SAMPLE_RATE, Nicaiu.DAQmx_Val_Rising, Nicaiu.DAQmx_Val_ContSamps, 1000);
         }
