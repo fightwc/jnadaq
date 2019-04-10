@@ -9,8 +9,6 @@ import java.nio.DoubleBuffer;
 import java.nio.IntBuffer;
 
 import com.sun.jna.Pointer;
-import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 
 import jna.NiDaq;
 import jna.NiDaqException;
@@ -40,10 +38,16 @@ public class ZxDaq {
     public void initTask(boolean isNew, String[] devs) throws NiDaqException {
         boolean[] successed = new boolean[devs.length];
         if (isNew) {
-//            PlotFrame.debugOutput("init");
-            daq.resetDevice("Dev1");
-//            PlotFrame.debugOutput("reset");
-            aiTask = daq.createTask("AITask");
+            boolean devReady = false;
+            while (!devReady) {
+                try {
+                    daq.resetDevice("Dev1");
+                    aiTask = daq.createTask("AITask");
+                    devReady = true;
+                } catch (NiDaqException e) {
+                    System.out.println(e.toString());
+                }
+            }
             for (int i = 0; i < devs.length; i++) {
                 PlotFrame.debugOutput(devs[i]);
                 while (!successed[i]) {
